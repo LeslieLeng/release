@@ -221,13 +221,9 @@
                 </tr>
                 <tr>
                   <td width="220px" id="viewerid">
-                      <ul  style="list-style: none;padding: 0;margin: 0" id="showimages">
-                        <li style=" float:left" v-for="(image,index) in images"
-                            :key="index">
+                      <div  style="list-style: none;padding: 0;margin: 0" id="showimages">
 
-                          <img class="min" :src="image" />
-                        </li>
-                      </ul>
+                      </div>
                   </td>
                   <td></td>
                   <td> <label>{{upathname2}}</label></td>
@@ -291,10 +287,6 @@
         df_standalone:'',
         df_stage_marker:'',
         //展示图片
-        imageUrlMIs:'',
-        imageUrlTIs:'',
-        images:['http://172.16.3.105:8000/myapp/media/ba1.jpg','http://172.16.3.105:8000/myapp/media/ba2.jpg'],
-        // images:[],
         imgId:'',
         viewerId:null
       }
@@ -599,6 +591,7 @@
       },
       //选中当前行
       clickRow(row) {
+        // this.viewerId=null
         let arr=[]
         this.imgId = row.id
         let img=row.image_1.split('$')
@@ -606,20 +599,21 @@
         for(let i = 0;i<img.length;i++){
          arr.push(imgurl+'/myapp'+img[i])
         }
-        this.images=arr
-          new Viewer(document.getElementById('viewerid'), {
-          viewed: function () {
-            // viewer.show();
-            this.viewer.update();
-          }
-        })
+        var div = document.getElementById('showimages')
+        div.innerHTML=''
+        var strImg=''
+        for(var i=0;i<arr.length;i++){
+          strImg += '<img style=" cursor: zoom-in" width="200" height="120"  src='+arr[i]+'>'
+        }
+        div.innerHTML=strImg
+        this.viewerId && this.viewerId.destroy()
+        this.viewerId && this.viewerId.update()
+        this.viewerId = new Viewer(document.getElementById('showimages'));
 
       },
 
-
     },
     mounted(){
-
       this.getTree()
       this.isShejishi()
       this.isBoss()
@@ -631,8 +625,10 @@
   span {
     color: white
   }
-  .showimages li+li{
-    display: none;
+  #showimages{
+    width: 200px;
+    height: 120px;
+    overflow: hidden;
   }
   .right-button {
     float: left;
@@ -688,24 +684,4 @@
     text-align: left;
   }
 
-  /*图片*/
-  .min {
-    width: 200px;
-    cursor: zoom-in;
-    height: 120px;
-  }
-  .max{
-    width: 500px;
-    cursor: zoom-out;
-    position: fixed;
-    visibility: visible;
-    z-index: 1102;
-    left: 50%;
-    top: 50%;
-    width: 549px;
-    height: 531px;
-    margin-left: -274.5px;
-    margin-top: -265.5px;
-    display: block;
-  }
 </style>
