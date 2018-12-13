@@ -79,15 +79,15 @@ export const routes = [
     path: '/rechengxiang',
     redirect: {name: 'rechengxiangall'},
     component: ReChengXiang,
-    // beforeEnter: (to, from, next) => {
-    //
-    //   if (sessionStorage.getItem('userId')) {
-    //       next()
-    //   } else {
-    //     alert('请登陆后查看')
-    //     next({path: '/login', name: 'login', component: Login})
-    //   }
-    // },
+    beforeEnter: (to, from, next) => {
+
+      if (sessionStorage.getItem('userId')) {
+          next()
+      } else {
+        alert('请登陆后查看')
+        next({path: '/login', name: 'login', component: Login})
+      }
+    },
     children: [
       {path: '/unreviewed', name: 'unreviewed', component: Unreviewed},
       {path: '/reviewed', name: 'reviewed', component: Reviewed},

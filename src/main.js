@@ -14,14 +14,14 @@ axios.defaults.baseURL = 'http://172.16.3.79:8000/myapp'
 import axios from 'axios'
 Vue.prototype.axios=axios
 import '../static/icon/iconfont.css'
-import Viewer from 'v-viewer'
-import 'viewerjs/dist/viewer.css'
+// import Viewer from 'v-viewer'
+// import 'viewerjs/dist/viewer.css'
 //Vue.use(Viewer) 默认配置写法
-Vue.use(Viewer, {
-  defaultOptions: {
-    zIndex: 9999
-  }
-})
+// Vue.use(Viewer, {
+//   defaultOptions: {
+//     zIndex: 9999
+//   }
+// })
 
 
 

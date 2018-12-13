@@ -68,7 +68,7 @@
             <el-col :span="24">
               <label>上传热成像图片：</label>
               <form id="upload1" enctype="multipart/form-data" style="display:none">
-                <input type="file" name="fileName" id="fileName1"  @change="changeImage1($event)" style="display:none" />
+                <input multiple="multiple" type="file" name="fileName" id="fileName1"  @change="changeImage1($event)" style="display:none" />
               </form>
               <el-button type="primary"  style="margin-left:5%"
                          id="btn_import1" v-on:click="selectFile1()">上传图片</el-button>
@@ -220,15 +220,14 @@
                   <td><el-button v-if="upathname2" type="primary" size="mini" @click="saveEditImg()">保存</el-button></td>
                 </tr>
                 <tr>
-                  <td width="220px">
-                    <viewer>
-                      <ul style="list-style: none;padding: 0;margin: 0" class="showimages">
+                  <td width="220px" id="viewerid">
+                      <ul  style="list-style: none;padding: 0;margin: 0" id="showimages">
                         <li style=" float:left" v-for="(image,index) in images"
                             :key="index">
+
                           <img class="min" :src="image" />
                         </li>
                       </ul>
-                    </viewer>
                   </td>
                   <td></td>
                   <td> <label>{{upathname2}}</label></td>
@@ -244,6 +243,8 @@
 </template>
 
 <script>
+  import Viewer from 'viewerjs'
+  import 'viewerjs/dist/viewer.css'
   import axios from 'axios'
   import $ from "jquery";
   export default {
@@ -281,8 +282,7 @@
         //树状图
         treeData: [
         ],
-        //角色确认
-        isConfirm:true,
+
         // 角色判断
         isSheji:false,
         isAdmin:false,
@@ -291,18 +291,19 @@
         df_standalone:'',
         df_stage_marker:'',
         //展示图片
-        imageurl:'http://e.hiphotos.baidu.com/image/h%3D300/sign=8000a165df1b0ef473e89e5eedc551a1/b151f8198618367afe76969623738bd4b21ce5fa.jpg,http://d.hiphotos.baidu.com/image/h%3D300/sign=e6cb69522534349b6b066885f9eb1521/91ef76c6a7efce1b5ef04082a251f3deb58f659b.jpg,http://a.hiphotos.baidu.com/image/h%3D300/sign=a284ee4bc595d143c576e22343f18296/0b7b02087bf40ad182fac5ab5a2c11dfa9ecce58.jpg',
         imageUrlMIs:'',
         imageUrlTIs:'',
-        images:['http://e.hiphotos.baidu.com/image/h%3D300/sign=8000a165df1b0ef473e89e5eedc551a1/b151f8198618367afe76969623738bd4b21ce5fa.jpg','http://d.hiphotos.baidu.com/image/h%3D300/sign=e6cb69522534349b6b066885f9eb1521/91ef76c6a7efce1b5ef04082a251f3deb58f659b.jpg','http://a.hiphotos.baidu.com/image/h%3D300/sign=a284ee4bc595d143c576e22343f18296/0b7b02087bf40ad182fac5ab5a2c11dfa9ecce58.jpg'],
+        images:['http://172.16.3.105:8000/myapp/media/ba1.jpg','http://172.16.3.105:8000/myapp/media/ba2.jpg'],
+        // images:[],
         imgId:'',
+        viewerId:null
       }
     },
     methods: {
       // 树
       getTree() {
         //树第1级
-        axios.post(this.$store.state.url+'/myapp/getTree/').then((result) => {
+        axios.post(this.$store.state.url+'/myapp/getTree_one/').then((result) => {
           // console.log(result.data.data)
           this.treeData = result.data.data
         })
@@ -415,7 +416,7 @@
         var formData = new FormData();
         //依次添加多个文件
         for (var i = 0; i < this.upath1.length; i++) {
-          formData.append('image_1', this.upath1);
+          formData.append('image', this.upath1[i]);
         }
         formData.append('model', this.df_model)
         formData.append('standalone', this.df_standalone)
@@ -489,8 +490,18 @@
         var imgformData = new FormData();
         //依次添加多个文件
         for (var i = 0; i < this.upath2.length; i++) {
-          imgformData.append('image_2', this.upath2);
+          imgformData.append('image', this.upath2[i]);
         }
+        imgformData.append('id', this.imgId)
+        let oReq = new XMLHttpRequest();
+        oReq.open("POST", this.$store.state.url+'/myapp/edit_image/');
+        oReq.send(imgformData);
+        oReq.onload = function(res) {
+          alert('添加成功')
+          _this.upath2='';
+          _this.upathname2='';
+          _this.getInfo()
+        };
       },
       // 删除
       handleDelete(index, row) {
@@ -566,6 +577,11 @@
       changeImage1(e) {
         this.upath1 = e.target.files;
         for (var i = 0; i < this.upath1.length; i++) {
+          if(e.target.files[i].name.indexOf("$") != -1){
+            alert('文件名不能含有‘$’,请改名后上传！')
+            this.upath1=[];
+            return false
+          }
           this.upathname1+=e.target.files[i].name+','
         }
       },
@@ -581,20 +597,32 @@
       selectFile2(){
         $("#fileName2").trigger("click");
       },
-      // /-待修改-/
       //选中当前行
       clickRow(row) {
+        let arr=[]
         this.imgId = row.id
-        // console.log(row);
+        let img=row.image_1.split('$')
         let imgurl = this.$store.state.url
-        this.imageUrlMIs = imgurl+'/myapp'+row.image_1;
-        this.imageUrlTIs = imgurl+'/myapp'+row.image_2;
+        for(let i = 0;i<img.length;i++){
+         arr.push(imgurl+'/myapp'+img[i])
+        }
+        this.images=arr
+          new Viewer(document.getElementById('viewerid'), {
+          viewed: function () {
+            // viewer.show();
+            this.viewer.update();
+          }
+        })
+
       },
+
 
     },
     mounted(){
+
       this.getTree()
       this.isShejishi()
+      this.isBoss()
     }
   }
 </script>

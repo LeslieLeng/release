@@ -17,7 +17,7 @@
         >增添数据
         </el-button>
         <el-button  @click="getdoc" type="primary" size="mini" style="float: right"
-                    id="btn_doc"
+                   id="btn_edittext"
         >导出数据
         </el-button>
         <!-- Form -->
@@ -56,6 +56,9 @@
                 <el-form-item label="热阻 :">
                   <el-input style="width: 60%" v-model="add_heat_resistance"></el-input>
                 </el-form-item>
+                <el-form-item label="壳温 :">
+                  <el-input style="width: 60%" v-model="add_k_temperature"></el-input>
+                </el-form-item>
                 <el-form-item label="结温 :">
                   <el-input style="width: 60%" v-model="add_tj"></el-input>
                 </el-form-item>
@@ -66,23 +69,14 @@
             </el-col>
           </el-row>
           <el-row>
-            <el-col :span="12">
-              <label>上传热成像正面：</label>
+            <el-col :span="24">
+              <label>上传热成像图片：</label>
               <form id="upload1" enctype="multipart/form-data" style="display:none">
-                <input type="file" name="fileName" id="fileName1"  @change="changeImage1($event)" style="display:none" />
+                <input multiple="multiple" type="file" name="fileName" id="fileName1"  @change="changeImage1($event)" style="display:none" />
               </form>
               <el-button type="primary"  style="margin-left:5%"
-                         id="btn_import1" v-on:click="selectFile1()">图片正面</el-button>
+                         id="btn_import1" v-on:click="selectFile1()">上传图片</el-button>
               <label>{{upathname1}}</label>
-            </el-col>
-            <el-col :span="12">
-              <label>上传热成像反面：</label>
-              <form id="upload2" enctype="multipart/form-data" style="display:none">
-                <input type="file" name="fileName" id="fileName2"  @change="changeImage2($event)" style="display:none" />
-              </form>
-              <el-button type="primary"  style="margin-left:5%"
-                         id="btn_import2" v-on:click="selectFile2()">图片背面</el-button>
-              <label>{{upathname2}}</label>
             </el-col>
           </el-row>
           <div slot="footer" class="dialog-footer">
@@ -173,6 +167,12 @@
                 <label v-if='!scope.row.editable'>{{scope.row.heat_resistance}}</label>
               </template>
             </el-table-column>
+            <el-table-column prop="k_temperature" label="壳温" width="130">
+              <template slot-scope="scope">
+                <el-input v-if='scope.row.editable' size="small" v-model="scope.row.k_temperature"></el-input>
+                <label v-if='!scope.row.editable'>{{scope.row.k_temperature}}</label>
+              </template>
+            </el-table-column>
             <el-table-column prop="tj" label="结温" width="100">
               <template slot-scope="scope">
                 <el-input v-if='scope.row.editable' size="small" v-model="scope.row.tj"></el-input>
@@ -192,7 +192,9 @@
                 </el-button>
                 <el-button v-if='scope.row.editable' size="mini" @click="saveEdit(scope.$index, scope.row)">保存
                 </el-button>
-                <el-button type="danger" size="mini" @click="handleDelete(scope.$index, scope.row)">删除</el-button>
+                </span>
+                <span v-if="isAdmin">
+                  <el-button type="danger" size="mini" @click="handleDelete(scope.$index, scope.row)">删除</el-button>
                 </span>
                 <span v-if="isConfirm(scope.$index, scope.row)">
                   <el-button type="success" size="mini" @click="handleConfirm(scope.$index, scope.row)">确认</el-button>
@@ -210,16 +212,29 @@
             <el-tab-pane label="图像信息" name="first">
               <table id="otherAttr">
                 <tr>
-                  <td width="220px">MIs</td>
-                  <td width="220px">TIs</td>
+                  <td width="220px">图片缩略图：</td>
+                  <td width="220px">修改图片：</td>
+                  <td>
+                    <form id="upload2" enctype="multipart/form-data" style="display:none">
+                      <input multiple="multiple" type="file" name="fileName" id="fileName2"  @change="changeImage2($event)" style="display:none" />
+                    </form>
+                    <el-button size="mini" type="primary"  style="margin-left:5%"
+                               id="btn_import2" v-on:click="selectFile2()">选择图片</el-button>
+                  </td>
+                  <td><el-button v-if="upathname2" type="primary" size="mini" @click="saveEditImg()">保存</el-button></td>
                 </tr>
                 <tr>
-                  <td width="220px">
-                    <img :src="imageUrlMIs" id="imageDiecengMIs" class="min" @click="imageMIsShow()">
+                  <td width="220px" id="viewerid">
+                    <ul  style="list-style: none;padding: 0;margin: 0" class="showimages">
+                      <li style=" float:left" v-for="(image,index) in images"
+                          :key="index">
+
+                        <img class="min" :src="image" />
+                      </li>
+                    </ul>
                   </td>
-                  <td width="220px">
-                    <img :src="imageUrlTIs" id="imageDiecengTIs" class="min" @click="imageTIsShow()">
-                  </td>
+                  <td></td>
+                  <td> <label>{{upathname2}}</label></td>
                 </tr>
               </table>
             </el-tab-pane>
@@ -232,6 +247,8 @@
 </template>
 
 <script>
+  import Viewer from 'viewerjs'
+  import 'viewerjs/dist/viewer.css'
   import axios from 'axios'
   import $ from "jquery";
   export default {
@@ -254,7 +271,7 @@
         add_heat_resistance: '',
         add_tj: '',
         add_htj: '',
-        add_id:'',
+        add_k_temperature:'',
         // 上传图片
         upath1:'',
         upath2:'',
@@ -264,27 +281,15 @@
         keyWords: '',
         // 表格
         tableData: [
-          //   {
-          // p_number:12,
-          // printed:45,
-          // p_test:6456,
-          // time_of_duration:546,
-          // temperature:45654,
-          // required:54654,
-          // device:45654,
-          // power_dissipation:45645,
-          // heat_resistance:45645,
-          // tj:546546,
-          // htj:45654,
-          // editable: false,}
+
         ],
         //树状图
         treeData: [
         ],
-        //角色确认
-        // isConfirm:true,
+
         // 角色判断
         isSheji:false,
+        isAdmin:false,
         //所选目录
         df_model:'',
         df_standalone:'',
@@ -292,6 +297,10 @@
         //展示图片
         imageUrlMIs:'',
         imageUrlTIs:'',
+        images:['http://172.16.3.105:8000/myapp/media/ba1.jpg','http://172.16.3.105:8000/myapp/media/ba2.jpg'],
+        // images:[],
+        imgId:'',
+        viewerId:null
       }
     },
     methods: {
@@ -318,12 +327,11 @@
       // 树
       getTree() {
         //树第1级
-        axios.post(this.$store.state.url+'/myapp/getTree/').then((result) => {
+        axios.post(this.$store.state.url+'/myapp/getTree_one/').then((result) => {
           // console.log(result.data.data)
           this.treeData = result.data.data
         })
       },
-
       handleNodeClick(event) {
         let _this = this
         if (event.type == 'model') {
@@ -363,7 +371,6 @@
           this.df_stage_marker=arr[2]
           this.getInfo()
         }
-
       },
       // 检索
       search(){
@@ -404,6 +411,7 @@
                 tj: this.datalist[i].tj,
                 htj: this.datalist[i].htj,
                 id: this.datalist[i].id,
+                k_temperature:this.datalist[i].k_temperature,
                 image_1:this.datalist[i].image1,
                 image_2:this.datalist[i].image2,
                 shejishi: this.datalist[i].role1_confirm,
@@ -431,10 +439,9 @@
         let _this = this
         var formData = new FormData();
         //依次添加多个文件
-        formData.append('image_1', this.upath1);
-        formData.append('image_2', this.upath2);
-        formData.append('upathname1', this.upathname1);
-        formData.append('upathname2', this.upathname2);
+        for (var i = 0; i < this.upath1.length; i++) {
+          formData.append('image', this.upath1[i]);
+        }
         formData.append('model', this.df_model)
         formData.append('standalone', this.df_standalone)
         formData.append('stage_marker', this.df_stage_marker)
@@ -443,6 +450,7 @@
         formData.append('p_test', this.add_p_test)
         formData.append('time_of_duration', this.add_time_of_duration)
         formData.append('temperature', this.add_temperature)
+        formData.append('k_temperature', this.add_k_temperature)
         formData.append('required', this.add_required)
         formData.append('device', this.add_device)
         formData.append('power_dissipation', this.add_power_dissipation)
@@ -454,22 +462,21 @@
         oReq.send(formData);
         oReq.onload = function(res) {
           alert('添加成功')
-          this.upath1='';
-          this.upath2='';
-          this.upathname1='';
-          this.upathname2='';
-          this.add_p_number='';
-          this.add_printed='';
-          this.add_p_test='';
-          this.add_time_of_duration='';
-          this.add_temperature='';
-          this.add_required='';
-          this.add_device='';
-          this.add_power_dissipation='';
-          this.add_heat_resistance='';
-          this.add_tj='';
-          this.add_htj='';
-          this.dialogVisible = false
+          _this.upath1='';
+          _this.upathname1='';
+          _this.add_p_number='';
+          _this.add_printed='';
+          _this.add_p_test='';
+          _this.add_time_of_duration='';
+          _this.add_temperature='';
+          _this.add_required='';
+          _this.add_device='';
+          _this.add_power_dissipation='';
+          _this.add_heat_resistance='';
+          _this.add_k_temperature='';
+          _this.add_tj='';
+          _this.add_htj='';
+          _this.dialogVisible = false
           _this.getInfo()
         };
 
@@ -488,6 +495,7 @@
           p_test: row.p_test,
           time_of_duration: row.time_of_duration,
           temperature: row.temperature,
+          k_temperature: row.k_temperature,
           required: row.required,
           device: row.device,
           power_dissipation: row.power_dissipation,
@@ -499,6 +507,25 @@
         }).catch((err) => {
           console.log(err)
         })
+      },
+      // 保存图片
+      saveEditImg(){
+        let _this = this
+        var imgformData = new FormData();
+        //依次添加多个文件
+        for (var i = 0; i < this.upath2.length; i++) {
+          imgformData.append('image', this.upath2[i]);
+        }
+        imgformData.append('id', this.imgId)
+        let oReq = new XMLHttpRequest();
+        oReq.open("POST", this.$store.state.url+'/myapp/edit_image/');
+        oReq.send(imgformData);
+        oReq.onload = function(res) {
+          alert('添加成功')
+          _this.upath2='';
+          _this.upathname2='';
+          _this.getInfo()
+        };
       },
       // 删除
       handleDelete(index, row) {
@@ -522,6 +549,9 @@
           juese = 'role3_confirm'
         } else if (sessionStorage.getItem("userDuty") == '"产保副总师"') {
           juese = 'role4_confirm'
+        }else {
+          alert('没有权限！')
+          return false
         }
         axios.post(this.$store.state.url+'/myapp/confirm_info/', {
           id: row.id,
@@ -545,6 +575,14 @@
           this.isSheji = false
         }
       },
+      //管理员可删除
+      isBoss() {
+        if ((sessionStorage.getItem("userDuty") == '"设计师"')||(sessionStorage.getItem("userDuty") == '"产保副总师"')||(sessionStorage.getItem("userDuty") == '"保密员"')) {
+          this.isAdmin = true
+        } else {
+          this.isAdmin = false
+        }
+      },
       //不同角色确定
       isConfirm(index, row) {
         if ((sessionStorage.getItem("userDuty") == '"设计师"') && (row.shejishi == 1)) {
@@ -559,51 +597,60 @@
           return true
         }
       },
-      //导入图片正面
+      //导入图片
       changeImage1(e) {
-        this.upath1 = e.target.files[0];
-        this.upathname1 = e.target.files[0].name
-        // console.log(this.upath1[0].name)
+        this.upath1 = e.target.files;
+        for (var i = 0; i < this.upath1.length; i++) {
+          if(e.target.files[i].name.indexOf("$") != -1){
+            alert('文件名不能含有‘$’,请改名后上传！')
+            this.upath1=[];
+            return false
+          }
+          this.upathname1+=e.target.files[i].name+','
+        }
       },
       selectFile1(){
         $("#fileName1").trigger("click");
       },
       changeImage2(e) {
-        // console.log( e.target.files)
-        this.upath2 = e.target.files[0];
-        this.upathname2 = e.target.files[0].name
-
+        this.upath2 = e.target.files;
+        for (var i = 0; i < this.upath2.length; i++) {
+          this.upathname2+=e.target.files[i].name+','
+        }
       },
       selectFile2(){
         $("#fileName2").trigger("click");
       },
-
       //选中当前行
       clickRow(row) {
-        // console.log(row);
+        let arr = []
+        this.imgId = row.id
+        let img = row.image_1.split('$')
         let imgurl = this.$store.state.url
-        this.imageUrlMIs = imgurl+'/myapp'+row.image_1;
-        this.imageUrlTIs = imgurl+'/myapp'+row.image_2;
-      },
-      //图片缩放
-      imageMIsShow:function(){
-        $("#imageDiecengMIs").toggleClass('min');
-        $("#imageDiecengMIs").toggleClass('max');
-
-      },
-      imageTIsShow:function(){
-        $("#imageDiecengTIs").toggleClass('min');
-        $("#imageDiecengTIs").toggleClass('max');
-      },
+        for (let i = 0; i < img.length; i++) {
+          arr.push(imgurl + '/myapp' + img[i])
+        }
+        this.images = arr
+        new Viewer(document.getElementById('viewerid'), {
+          viewed: function () {
+            // viewer.show();
+            this.viewer.update();
+          }
+        })
+      }
     },
     mounted(){
       this.getTree()
       this.isShejishi()
+      this.isBoss()
     }
   }
 </script>
 
 <style scoped>
+  .showimages li+li{
+    display: none;
+  }
   span {
     color: white
   }
