@@ -3,9 +3,9 @@
       <div class="main_header">
           <div class="left_logo">
                <div class="logo_image">
-                   <img src="../assets/imgs/u15976.jpg" style="width:45px;height:45px" alt="">
+                   <img src="../assets/imgs/logo.png" style="width:45px;height:45px" alt="">
                </div>
-               <div class="logo_font"><span>航天科技集团811所</span></div>
+               <div class="logo_font"><span>上海空间电源研究所</span></div>
           </div>
           <div class="right_logo">
                 <ul>

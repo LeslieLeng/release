@@ -11,7 +11,7 @@
 
       <div class="data_content">
         <div class="c_left">
-          <img src="../../assets/imgs/u15976.png" alt="">
+          <img width="500" src="../../assets/imgs/login.png" alt="">
         </div>
         <div class="c_right">
           <div class="cont">
@@ -129,7 +129,6 @@
   .c_left{
     width: 40%;
     text-align: center;
-    padding-top: 120px;
   }
   .c_right{
     width: 60%;

@@ -209,8 +209,8 @@
               <table id="otherAttr">
                 <tr>
                   <td width="220px">图片缩略图：</td>
-                  <td width="220px">修改图片：</td>
-                  <td>
+                  <td v-if='isSheji' width="220px">修改图片：</td>
+                  <td v-if='isSheji'>
                     <form id="upload2" enctype="multipart/form-data" style="display:none">
                       <input multiple="multiple" type="file" name="fileName" id="fileName2"  @change="changeImage2($event)" style="display:none" />
                     </form>
@@ -587,7 +587,7 @@
       },
       //选中当前行
       clickRow(row) {
-        this.viewerId=null
+        // this.viewerId=null
         let arr=[]
         this.imgId = row.id
         let img=row.image_1.split('$')
@@ -595,7 +595,6 @@
         for(let i = 0;i<img.length;i++){
           arr.push(imgurl+'/myapp'+img[i])
         }
-
         var div = document.getElementById('showimages')
         div.innerHTML=''
         var strImg=''
@@ -607,7 +606,6 @@
         this.viewerId && this.viewerId.update()
         this.viewerId = new Viewer(document.getElementById('showimages'));
       },
-
 
     },
     mounted(){
